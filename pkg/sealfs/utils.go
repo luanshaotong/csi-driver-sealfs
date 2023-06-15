@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nfs
+package sealfs
 
 import (
 	"fmt"
@@ -50,15 +50,16 @@ func validateOnDeleteValue(onDelete string) error {
 	return fmt.Errorf("invalid value %s for OnDelete, supported values are %v", onDelete, supportedOnDeleteValues)
 }
 
-func NewDefaultIdentityServer(d *Driver) *IdentityServer {
+func NewDefaultIdentityServer(d *SealfsDriver) *IdentityServer {
 	return &IdentityServer{
 		Driver: d,
 	}
 }
 
-func NewControllerServer(d *Driver) *ControllerServer {
+func NewControllerServer(d *SealfsDriver, cli Cli) *ControllerServer {
 	return &ControllerServer{
 		Driver: d,
+		cli:    cli,
 	}
 }
 
@@ -142,16 +143,16 @@ func (vl *VolumeLocks) Release(volumeID string) {
 	vl.locks.Delete(volumeID)
 }
 
-// getMountOptions get mountOptions value from a map
-func getMountOptions(context map[string]string) string {
-	for k, v := range context {
-		switch strings.ToLower(k) {
-		case mountOptionsField:
-			return v
-		}
-	}
-	return ""
-}
+// // getMountOptions get mountOptions value from a map
+// func getMountOptions(context map[string]string) string {
+// 	for k, v := range context {
+// 		switch strings.ToLower(k) {
+// 		case mountOptionsField:
+// 			return v
+// 		}
+// 	}
+// 	return ""
+// }
 
 // chmodIfPermissionMismatch only perform chmod when permission mismatches
 func chmodIfPermissionMismatch(targetPath string, mode os.FileMode) error {

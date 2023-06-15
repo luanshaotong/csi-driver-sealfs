@@ -26,7 +26,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubernetes-csi/csi-driver-nfs/pkg/nfs"
+	"github.com/kubernetes-csi/csi-driver-nfs/pkg/sealfs"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"github.com/pborman/uuid"
@@ -43,7 +43,7 @@ const (
 
 var (
 	nodeID                        = os.Getenv("NODE_ID")
-	nfsDriver                     *nfs.Driver
+	nfsDriver                     *sealfs.SealfsDriver
 	isWindowsCluster              = os.Getenv(testWindowsEnvVar) != ""
 	defaultStorageClassParameters = map[string]string{
 		"server": nfsServerAddress,
@@ -75,7 +75,7 @@ var (
 		"mountPermissions": "0755",
 		"onDelete":         "retain",
 	}
-	controllerServer *nfs.ControllerServer
+	controllerServer *sealfs.ControllerServer
 )
 
 type testCmd struct {
@@ -95,13 +95,13 @@ var _ = ginkgo.BeforeSuite(func() {
 	handleFlags()
 	framework.AfterReadingAllFlags(&framework.TestContext)
 
-	options := nfs.DriverOptions{
+	options := sealfs.DriverOptions{
 		NodeID:     nodeID,
-		DriverName: nfs.DefaultDriverName,
+		DriverName: sealfs.DefaultDriverName,
 		Endpoint:   fmt.Sprintf("unix:///tmp/csi-%s.sock", uuid.NewUUID().String()),
 	}
-	nfsDriver = nfs.NewDriver(&options)
-	controllerServer = nfs.NewControllerServer(nfsDriver)
+	nfsDriver = sealfs.NewDriver(&options)
+	controllerServer = sealfs.NewControllerServer(nfsDriver, &sealfs.SealfsCli{})
 
 	// install nfs server
 	installNFSServer := testCmd{

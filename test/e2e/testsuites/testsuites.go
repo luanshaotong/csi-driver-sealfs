@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/kubernetes-csi/csi-driver-nfs/pkg/nfs"
+	"github.com/kubernetes-csi/csi-driver-nfs/pkg/sealfs"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	apps "k8s.io/api/apps/v1"
@@ -562,7 +562,7 @@ func (t *TestPersistentVolumeClaim) DeleteBoundPersistentVolume() {
 	framework.ExpectNoError(err)
 }
 
-func (t *TestPersistentVolumeClaim) DeleteBackingVolume(cs *nfs.ControllerServer) {
+func (t *TestPersistentVolumeClaim) DeleteBackingVolume(cs *sealfs.ControllerServer) {
 	volumeID := t.persistentVolume.Spec.CSI.VolumeHandle
 	ginkgo.By(fmt.Sprintf("deleting nfs volume %q", volumeID))
 	req := &csi.DeleteVolumeRequest{
@@ -608,7 +608,7 @@ func (t *TestPod) SetupCSIInlineVolume(name, mountPath, server, share, mountOpti
 		Name: name,
 		VolumeSource: v1.VolumeSource{
 			CSI: &v1.CSIVolumeSource{
-				Driver: nfs.DefaultDriverName,
+				Driver: sealfs.DefaultDriverName,
 				VolumeAttributes: map[string]string{
 					"server":       server,
 					"share":        share,

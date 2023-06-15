@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nfs
+package sealfs
 
 import (
 	"context"
-	"errors"
 	"os"
 	"reflect"
 	"strings"
@@ -285,13 +284,10 @@ func TestNodeGetCapabilities(t *testing.T) {
 
 func getTestNodeServer() (NodeServer, error) {
 	d := NewEmptyDriver("")
-	mounter, err := NewFakeMounter()
-	if err != nil {
-		return NodeServer{}, errors.New("failed to get fake mounter")
-	}
+	cli := fakeCli{}
 	return NodeServer{
-		Driver:  d,
-		mounter: mounter,
+		Driver: d,
+		cli:    &cli,
 	}, nil
 }
 

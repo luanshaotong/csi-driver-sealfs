@@ -18,7 +18,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: nfs-csi
-provisioner: nfs.csi.k8s.io
+provisioner: sealfs.csi.k8s.io
 parameters:
   server: nfs-server.default.svc.cluster.local
   share: /

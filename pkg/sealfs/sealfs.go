@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nfs
+package sealfs
 
 import (
-	"runtime"
 	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -31,17 +30,15 @@ type DriverOptions struct {
 	DriverName            string
 	Endpoint              string
 	MountPermissions      uint64
-	WorkingMountDir       string
 	DefaultOnDeletePolicy string
 }
 
-type Driver struct {
+type SealfsDriver struct {
 	name                  string
 	nodeID                string
 	version               string
 	endpoint              string
 	mountPermissions      uint64
-	workingMountDir       string
 	defaultOnDeletePolicy string
 
 	//ids *identityServer
@@ -52,43 +49,38 @@ type Driver struct {
 }
 
 const (
-	DefaultDriverName = "nfs.csi.k8s.io"
-	// Address of the NFS server
-	paramServer = "server"
-	// Base directory of the NFS server to create volumes under.
+	DefaultDriverName = "sealfs.csi.k8s.io"
+	// Base directory of the sealfs server to create volumes under.
 	// The base directory must be a direct child of the root directory.
 	// The root directory is omitted from the string, for example:
 	//     "base" instead of "/base"
-	paramShare            = "share"
-	paramSubDir           = "subdir"
-	paramOnDelete         = "ondelete"
-	mountOptionsField     = "mountoptions"
-	mountPermissionsField = "mountpermissions"
-	pvcNameKey            = "csi.storage.k8s.io/pvc/name"
-	pvcNamespaceKey       = "csi.storage.k8s.io/pvc/namespace"
-	pvNameKey             = "csi.storage.k8s.io/pv/name"
-	pvcNameMetadata       = "${pvc.metadata.name}"
-	pvcNamespaceMetadata  = "${pvc.metadata.namespace}"
-	pvNameMetadata        = "${pv.metadata.name}"
+	paramHost              = "manager-host"
+	paramPort              = "manager-port"
+	paramOnDelete          = "ondelete"
+	mountPermissionsField  = "mountpermissions"
+	pvcNameKey             = "csi.storage.k8s.io/pvc/name"
+	pvcNamespaceKey        = "csi.storage.k8s.io/pvc/namespace"
+	pvNameKey              = "csi.storage.k8s.io/pv/name"
+	pvcNameMetadata        = "${pvc.metadata.name}"
+	pvcNamespaceMetadata   = "${pvc.metadata.namespace}"
+	pvNameMetadata         = "${pv.metadata.name}"
+	csiProvisionerIdentity = "storage.kubernetes.io/csiprovisioneridentity"
 )
 
-func NewDriver(options *DriverOptions) *Driver {
+func NewDriver(options *DriverOptions) *SealfsDriver {
 	klog.V(2).Infof("Driver: %v version: %v", options.DriverName, driverVersion)
 
-	n := &Driver{
+	n := &SealfsDriver{
 		name:             options.DriverName,
 		version:          driverVersion,
 		nodeID:           options.NodeID,
 		endpoint:         options.Endpoint,
 		mountPermissions: options.MountPermissions,
-		workingMountDir:  options.WorkingMountDir,
 	}
 
 	n.AddControllerServiceCapabilities([]csi.ControllerServiceCapability_RPC_Type{
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
 		csi.ControllerServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
-		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
-		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 	})
 
 	n.AddNodeServiceCapabilities([]csi.NodeServiceCapability_RPC_Type{
@@ -100,38 +92,34 @@ func NewDriver(options *DriverOptions) *Driver {
 	return n
 }
 
-func NewNodeServer(n *Driver, mounter mount.Interface) *NodeServer {
+func NewNodeServer(n *SealfsDriver, cli Cli) *NodeServer {
 	return &NodeServer{
-		Driver:  n,
-		mounter: mounter,
+		Driver: n,
+		cli:    cli,
 	}
 }
 
-func (n *Driver) Run(testMode bool) {
+func (n *SealfsDriver) Run(testMode bool) {
 	versionMeta, err := GetVersionYAML(n.name)
 	if err != nil {
 		klog.Fatalf("%v", err)
 	}
 	klog.V(2).Infof("\nDRIVER INFORMATION:\n-------------------\n%s\n\nStreaming logs below:", versionMeta)
 
-	mounter := mount.New("")
-	if runtime.GOOS == "linux" {
-		// MounterForceUnmounter is only implemented on Linux now
-		mounter = mounter.(mount.MounterForceUnmounter)
-	}
-	n.ns = NewNodeServer(n, mounter)
+	cli := SealfsCli{}
+	n.ns = NewNodeServer(n, &cli)
 	s := NewNonBlockingGRPCServer()
 	s.Start(n.endpoint,
 		NewDefaultIdentityServer(n),
 		// NFS plugin has not implemented ControllerServer
 		// using default controllerserver.
-		NewControllerServer(n),
+		NewControllerServer(n, &cli),
 		n.ns,
 		testMode)
 	s.Wait()
 }
 
-func (n *Driver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) {
+func (n *SealfsDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) {
 	var csc []*csi.ControllerServiceCapability
 	for _, c := range cl {
 		csc = append(csc, NewControllerServiceCapability(c))
@@ -139,7 +127,7 @@ func (n *Driver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapa
 	n.cscap = csc
 }
 
-func (n *Driver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapability_RPC_Type) {
+func (n *SealfsDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapability_RPC_Type) {
 	var nsc []*csi.NodeServiceCapability
 	for _, n := range nl {
 		nsc = append(nsc, NewNodeServiceCapability(n))

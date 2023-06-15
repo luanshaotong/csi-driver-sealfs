@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CMDS=nfsplugin
+CMDS=sealfsplugin
 DEPLOY_FOLDER = ./deploy
-CMDS=nfsplugin
+CMDS=sealfsplugin
 PKG = github.com/kubernetes-csi/csi-driver-nfs
 GINKGO_FLAGS = -ginkgo.v
 GO111MODULE = on
@@ -53,7 +53,7 @@ ALL_OS_ARCH = linux-arm64 linux-arm-v7 linux-amd64 linux-ppc64le
 
 .EXPORT_ALL_VARIABLES:
 
-all: nfs
+all: sealfs
 
 .PHONY: verify
 verify: unit-test
@@ -64,25 +64,30 @@ unit-test:
 	go test -covermode=count -coverprofile=profile.cov ./pkg/... -v
 
 .PHONY: sanity-test
-sanity-test: nfs
+sanity-test: sealfs
 	./test/sanity/run-test.sh
 
 .PHONY: integration-test
-integration-test: nfs
+integration-test: sealfs
 	./test/integration/run-test.sh
 
 .PHONY: local-build-push
-local-build-push: nfs
-	docker build -t $(LOCAL_USER)/nfsplugin:latest .
-	docker push $(LOCAL_USER)/nfsplugin
+local-build-push: sealfs
+	sudo docker build -t $(LOCAL_USER)/sealfsplugin:latest .
+	sudo docker push $(LOCAL_USER)/sealfsplugin
 
-.PHONY: nfs
-nfs:
-	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -a -ldflags "${LDFLAGS} ${EXT_LDFLAGS}" -mod vendor -o bin/${ARCH}/nfsplugin ./cmd/nfsplugin
+.PHONY: local-build-push
+build-lst: sealfs
+	sudo docker build -t luanshaotong/sealfsplugin:$(LST_TAG) .
+	sudo docker push luanshaotong/sealfsplugin:$(LST_TAG)
 
-.PHONY: nfs-armv7
-nfs-armv7:
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -a -ldflags "${LDFLAGS} ${EXT_LDFLAGS}" -mod vendor -o bin/arm/v7/nfsplugin ./cmd/nfsplugin
+.PHONY: sealfs
+sealfs:
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -a -ldflags "${LDFLAGS} ${EXT_LDFLAGS}" -mod vendor -o bin/${ARCH}/sealfsplugin ./cmd/sealfsplugin
+
+.PHONY: sealfs-armv7
+sealfs-armv7:
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -a -ldflags "${LDFLAGS} ${EXT_LDFLAGS}" -mod vendor -o bin/arm/v7/sealfsplugin ./cmd/sealfsplugin
 
 .PHONY: container-build
 container-build:
@@ -105,10 +110,10 @@ container:
 	docker run --privileged --rm tonistiigi/binfmt --uninstall qemu-aarch64
 	docker run --rm --privileged tonistiigi/binfmt --install all
 	for arch in $(ALL_ARCH.linux); do \
-		ARCH=$${arch} $(MAKE) nfs; \
+		ARCH=$${arch} $(MAKE) sealfs; \
 		ARCH=$${arch} $(MAKE) container-build; \
 	done
-	$(MAKE) nfs-armv7
+	$(MAKE) sealfs-armv7
 	$(MAKE) container-linux-armv7
 
 .PHONY: push
@@ -132,8 +137,8 @@ else
 	docker push $(IMAGE_TAG_LATEST)
 endif
 
-.PHONY: install-nfs-server
-install-nfs-server:
+.PHONY: install-sealfs-server
+install-sealfs-server:
 	kubectl apply -f ./deploy/example/nfs-provisioner/nfs-server.yaml
 	kubectl delete secret mount-options --ignore-not-found
 	kubectl create secret generic mount-options --from-literal mountOptions="nfsvers=4.1"

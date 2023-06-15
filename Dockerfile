@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM registry.k8s.io/build-image/debian-base:bullseye-v1.4.3
+FROM debian:bullseye-20221205
 
 ARG ARCH
-ARG binary=./bin/${ARCH}/nfsplugin
-COPY ${binary} /nfsplugin
+ARG binary=./bin/${ARCH}/sealfsplugin
 
-RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && clean-install ca-certificates mount nfs-common netbase
+RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && \
+    apt install -y libfuse3-3 libibverbs1 && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENTRYPOINT ["/nfsplugin"]
+COPY sealfs-client /usr/bin/sealfs-client
+COPY ${binary} /sealfsplugin
+
+ENTRYPOINT ["/sealfsplugin"]

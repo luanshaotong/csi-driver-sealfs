@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubernetes-csi/csi-driver-nfs/pkg/nfs"
+	"github.com/kubernetes-csi/csi-driver-nfs/pkg/sealfs"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -41,7 +41,7 @@ type NFSDriver struct {
 func InitNFSDriver() PVTestDriver {
 	driverName := os.Getenv(NFSDriverNameVar)
 	if driverName == "" {
-		driverName = nfs.DefaultDriverName
+		driverName = sealfs.DefaultDriverName
 	}
 
 	klog.Infof("Using nfs driver: %s", driverName)

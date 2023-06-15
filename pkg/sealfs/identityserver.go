@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nfs
+package sealfs
 
 import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -25,7 +25,7 @@ import (
 )
 
 type IdentityServer struct {
-	Driver *Driver
+	Driver *SealfsDriver
 }
 
 func (ids *IdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
@@ -48,6 +48,10 @@ func (ids *IdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPlugin
 // Currently the spec does not dictate what you should return either.
 // Hence, return an empty response
 func (ids *IdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
+	err := ids.Driver.ns.cli.Probe()
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, err.Error())
+	}
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
 

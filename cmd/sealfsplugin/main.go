@@ -20,7 +20,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/kubernetes-csi/csi-driver-nfs/pkg/nfs"
+	"github.com/kubernetes-csi/csi-driver-nfs/pkg/sealfs"
 
 	"k8s.io/klog/v2"
 )
@@ -29,8 +29,7 @@ var (
 	endpoint              = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	nodeID                = flag.String("nodeid", "", "node id")
 	mountPermissions      = flag.Uint64("mount-permissions", 0, "mounted folder permissions")
-	driverName            = flag.String("drivername", nfs.DefaultDriverName, "name of the driver")
-	workingMountDir       = flag.String("working-mount-dir", "/tmp", "working directory for provisioner to mount nfs shares temporarily")
+	driverName            = flag.String("drivername", sealfs.DefaultDriverName, "name of the driver")
 	defaultOnDeletePolicy = flag.String("default-ondelete-policy", "", "default policy for deleting subdirectory when deleting a volume")
 )
 
@@ -50,14 +49,13 @@ func main() {
 }
 
 func handle() {
-	driverOptions := nfs.DriverOptions{
+	driverOptions := sealfs.DriverOptions{
 		NodeID:                *nodeID,
 		DriverName:            *driverName,
 		Endpoint:              *endpoint,
 		MountPermissions:      *mountPermissions,
-		WorkingMountDir:       *workingMountDir,
 		DefaultOnDeletePolicy: *defaultOnDeletePolicy,
 	}
-	d := nfs.NewDriver(&driverOptions)
+	d := sealfs.NewDriver(&driverOptions)
 	d.Run(false)
 }

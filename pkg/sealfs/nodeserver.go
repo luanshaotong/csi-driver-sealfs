@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nfs
+package sealfs
 
 import (
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"golang.org/x/net/context"
@@ -29,18 +28,20 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/volume"
-	mount "k8s.io/mount-utils"
 )
 
 // NodeServer driver
 type NodeServer struct {
-	Driver  *Driver
-	mounter mount.Interface
+	Driver *SealfsDriver
+	cli    Cli
 }
 
 // NodePublishVolume mount the volume
 func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	volCap := req.GetVolumeCapability()
+
+	klog.V(4).Infof("NodePublishVolume: %v", req)
+
 	if volCap == nil {
 		return nil, status.Error(codes.InvalidArgument, "Volume capability missing in request")
 	}
@@ -52,94 +53,93 @@ func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	if len(targetPath) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Target path not provided")
 	}
-	mountOptions := volCap.GetMount().GetMountFlags()
-	if req.GetReadonly() {
-		mountOptions = append(mountOptions, "ro")
-	}
+	// mountOptions := volCap.GetMount().GetMountFlags()
+	// if req.GetReadonly() {
+	// 	mountOptions = append(mountOptions, "ro")
+	// }
 
-	var server, baseDir, subDir string
-	subDirReplaceMap := map[string]string{}
+	// var server, baseDir, subDir string
+	// subDirReplaceMap := map[string]string{}
 
-	mountPermissions := ns.Driver.mountPermissions
+	// mountPermissions := ns.Driver.mountPermissions
 	for k, v := range req.GetVolumeContext() {
 		switch strings.ToLower(k) {
-		case paramServer:
-			server = v
-		case paramShare:
-			baseDir = v
-		case paramSubDir:
-			subDir = v
+		case paramHost:
+		case paramPort:
+		case paramOnDelete:
 		case pvcNamespaceKey:
-			subDirReplaceMap[pvcNamespaceMetadata] = v
 		case pvcNameKey:
-			subDirReplaceMap[pvcNameMetadata] = v
 		case pvNameKey:
-			subDirReplaceMap[pvNameMetadata] = v
-		case mountOptionsField:
-			if v != "" {
-				mountOptions = append(mountOptions, v)
-			}
+		case csiProvisionerIdentity:
 		case mountPermissionsField:
 			if v != "" {
 				var err error
-				if mountPermissions, err = strconv.ParseUint(v, 8, 32); err != nil {
+				if _, err = strconv.ParseUint(v, 8, 32); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid mountPermissions %s", v))
 				}
 			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid parameter %q in storage class", k))
 		}
 	}
 
-	if server == "" {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("%v is a required parameter", paramServer))
-	}
-	if baseDir == "" {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("%v is a required parameter", paramShare))
-	}
-	server = getServerFromSource(server)
-	source := fmt.Sprintf("%s:%s", server, baseDir)
-	if subDir != "" {
-		// replace pv/pvc name namespace metadata in subDir
-		subDir = replaceWithMap(subDir, subDirReplaceMap)
+	// if server == "" {
+	// 	return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("%v is a required parameter", paramServer))
+	// }
+	// if baseDir == "" {
+	// 	return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("%v is a required parameter", paramShare))
+	// }
+	// server = getServerFromSource(server)
+	// source := fmt.Sprintf("%s:%s", server, baseDir)
+	// if subDir != "" {
+	// 	// replace pv/pvc name namespace metadata in subDir
+	// 	subDir = replaceWithMap(subDir, subDirReplaceMap)
 
-		source = strings.TrimRight(source, "/")
-		source = fmt.Sprintf("%s/%s", source, subDir)
-	}
+	// 	source = strings.TrimRight(source, "/")
+	// 	source = fmt.Sprintf("%s/%s", source, subDir)
+	// }
 
-	notMnt, err := ns.mounter.IsLikelyNotMountPoint(targetPath)
+	// notMnt, err := ns.mounter.IsLikelyNotMountPoint(targetPath)
+	// if err != nil {
+	// 	if os.IsNotExist(err) {
+	// 		if err := os.MkdirAll(targetPath, os.FileMode(mountPermissions)); err != nil {
+	// 			return nil, status.Error(codes.Internal, err.Error())
+	// 		}
+	// 		notMnt = true
+	// 	} else {
+	// 		return nil, status.Error(codes.Internal, err.Error())
+	// 	}
+	// }
+	// if !notMnt {
+	// 	return &csi.NodePublishVolumeResponse{}, nil
+	// }
+
+	// klog.V(2).Infof("NodePublishVolume: volumeID(%v) source(%s) targetPath(%s) mountflags(%v)", volumeID, source, targetPath, mountOptions)
+	// err = ns.mounter.Mount(source, targetPath, "nfs", mountOptions)
+	// if err != nil {
+	// 	if os.IsPermission(err) {
+	// 		return nil, status.Error(codes.PermissionDenied, err.Error())
+	// 	}
+	// 	if strings.Contains(err.Error(), "invalid argument") {
+	// 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	// 	}
+	// 	return nil, status.Error(codes.Internal, err.Error())
+	// }
+
+	// if mountPermissions > 0 {
+	// 	if err := chmodIfPermissionMismatch(targetPath, os.FileMode(mountPermissions)); err != nil {
+	// 		return nil, status.Error(codes.Internal, err.Error())
+	// 	}
+	// } else {
+	// 	klog.V(2).Infof("skip chmod on targetPath(%s) since mountPermissions is set as 0", targetPath)
+	// }
+	// klog.V(2).Infof("volume(%s) mount %s on %s succeeded", volumeID, source, targetPath)
+
+	err := ns.cli.Mount(req.VolumeId, req.TargetPath, []string{})
 	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(targetPath, os.FileMode(mountPermissions)); err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			notMnt = true
-		} else {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-	if !notMnt {
-		return &csi.NodePublishVolumeResponse{}, nil
-	}
-
-	klog.V(2).Infof("NodePublishVolume: volumeID(%v) source(%s) targetPath(%s) mountflags(%v)", volumeID, source, targetPath, mountOptions)
-	err = ns.mounter.Mount(source, targetPath, "nfs", mountOptions)
-	if err != nil {
-		if os.IsPermission(err) {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
-		}
-		if strings.Contains(err.Error(), "invalid argument") {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if mountPermissions > 0 {
-		if err := chmodIfPermissionMismatch(targetPath, os.FileMode(mountPermissions)); err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	} else {
-		klog.V(2).Infof("skip chmod on targetPath(%s) since mountPermissions is set as 0", targetPath)
-	}
-	klog.V(2).Infof("volume(%s) mount %s on %s succeeded", volumeID, source, targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
@@ -154,20 +154,25 @@ func (ns *NodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 		return nil, status.Error(codes.InvalidArgument, "Target path missing in request")
 	}
 
-	klog.V(2).Infof("NodeUnpublishVolume: unmounting volume %s on %s", volumeID, targetPath)
-	var err error
-	extensiveMountPointCheck := true
-	forceUnmounter, ok := ns.mounter.(mount.MounterForceUnmounter)
-	if ok {
-		klog.V(2).Infof("force unmount %s on %s", volumeID, targetPath)
-		err = mount.CleanupMountWithForce(targetPath, forceUnmounter, extensiveMountPointCheck, 30*time.Second)
-	} else {
-		err = mount.CleanupMountPoint(targetPath, ns.mounter, extensiveMountPointCheck)
-	}
+	// klog.V(2).Infof("NodeUnpublishVolume: unmounting volume %s on %s", volumeID, targetPath)
+	// var err error
+	// extensiveMountPointCheck := true
+	// forceUnmounter, ok := ns.mounter.(mount.MounterForceUnmounter)
+	// if ok {
+	// 	klog.V(2).Infof("force unmount %s on %s", volumeID, targetPath)
+	// 	err = mount.CleanupMountWithForce(targetPath, forceUnmounter, extensiveMountPointCheck, 30*time.Second)
+	// } else {
+	// 	err = mount.CleanupMountPoint(targetPath, ns.mounter, extensiveMountPointCheck)
+	// }
+	// if err != nil {
+	// 	return nil, status.Errorf(codes.Internal, "failed to unmount target %q: %v", targetPath, err)
+	// }
+	// klog.V(2).Infof("NodeUnpublishVolume: unmount volume %s on %s successfully", volumeID, targetPath)
+
+	err := ns.cli.Umount(req.TargetPath)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmount target %q: %v", targetPath, err)
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-	klog.V(2).Infof("NodeUnpublishVolume: unmount volume %s on %s successfully", volumeID, targetPath)
 
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }

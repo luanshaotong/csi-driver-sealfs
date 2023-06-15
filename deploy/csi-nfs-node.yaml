@@ -30,7 +30,7 @@ spec:
         - operator: "Exists"
       containers:
         - name: liveness-probe
-          image: registry.k8s.io/sig-storage/livenessprobe:v2.10.0
+          image: dyrnq/livenessprobe:v2.10.0
           args:
             - --csi-address=/csi/csi.sock
             - --probe-timeout=3s
@@ -46,7 +46,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: node-driver-registrar
-          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+          image: dyrnq/csi-node-driver-registrar:v2.8.0
           args:
             - --v=2
             - --csi-address=/csi/csi.sock
@@ -83,7 +83,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: gcr.io/k8s-staging-sig-storage/nfsplugin:canary
+          image: luanshaotong/sealfsplugin
           args:
             - "-v=5"
             - "--nodeid=$(NODE_ID)"
@@ -107,13 +107,15 @@ spec:
             initialDelaySeconds: 30
             timeoutSeconds: 10
             periodSeconds: 30
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet/pods
               mountPropagation: "Bidirectional"
+            - name: sealfs-daemon
+              mountPath: /tmp
           resources:
             limits:
               memory: 300Mi
@@ -133,3 +135,7 @@ spec:
             path: /var/lib/kubelet/plugins_registry
             type: Directory
           name: registration-dir
+        - name: sealfs-daemon
+          hostPath:
+            path: /tmp
+            type: Directory

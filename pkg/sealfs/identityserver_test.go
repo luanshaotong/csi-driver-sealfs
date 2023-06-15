@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nfs
+package sealfs
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func TestGetPluginInfo(t *testing.T) {
 	emptyVersionDriver := NewEmptyDriver("version")
 	tests := []struct {
 		desc        string
-		driver      *Driver
+		driver      *SealfsDriver
 		expectedErr error
 	}{
 		{

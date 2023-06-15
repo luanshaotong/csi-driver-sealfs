@@ -19,7 +19,7 @@ spec:
   volumes:
     - name: persistent-storage
       csi:
-        driver: nfs.csi.k8s.io
+        driver: sealfs.csi.k8s.io
         volumeAttributes:
           server: nfs-server.default.svc.cluster.local  # required
           share: /  # required

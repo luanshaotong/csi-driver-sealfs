@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nfs
+package sealfs
 
 import (
 	"os"
@@ -29,23 +29,23 @@ const (
 	fakeNodeID = "fakeNodeID"
 )
 
-func NewEmptyDriver(emptyField string) *Driver {
-	var d *Driver
+func NewEmptyDriver(emptyField string) *SealfsDriver {
+	var d *SealfsDriver
 	switch emptyField {
 	case "version":
-		d = &Driver{
+		d = &SealfsDriver{
 			name:    DefaultDriverName,
 			version: "",
 			nodeID:  fakeNodeID,
 		}
 	case "name":
-		d = &Driver{
+		d = &SealfsDriver{
 			name:    "",
 			version: driverVersion,
 			nodeID:  fakeNodeID,
 		}
 	default:
-		d = &Driver{
+		d = &SealfsDriver{
 			name:    DefaultDriverName,
 			version: driverVersion,
 			nodeID:  fakeNodeID,

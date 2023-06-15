@@ -17,7 +17,7 @@ limitations under the License.
 package testsuites
 
 import (
-	"github.com/kubernetes-csi/csi-driver-nfs/pkg/nfs"
+	"github.com/kubernetes-csi/csi-driver-nfs/pkg/sealfs"
 	"github.com/kubernetes-csi/csi-driver-nfs/test/e2e/driver"
 
 	v1 "k8s.io/api/core/v1"
@@ -29,7 +29,7 @@ import (
 type DynamicallyProvisionedReclaimPolicyTest struct {
 	CSIDriver              driver.DynamicPVTestDriver
 	Volumes                []VolumeDetails
-	ControllerServer       nfs.ControllerServer
+	ControllerServer       sealfs.ControllerServer
 	StorageClassParameters map[string]string
 }
 
