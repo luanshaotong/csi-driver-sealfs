@@ -4,7 +4,7 @@ apiVersion: apps/v1
 metadata:
   name: {{ .Values.controller.name }}
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 spec:
   replicas: {{ .Values.controller.replicas }}
   selector:
@@ -14,14 +14,14 @@ spec:
     type: {{ .Values.controller.strategyType }}
   template:
     metadata:
-{{ include "nfs.labels" . | indent 6 }}
+{{ include "sealfs.labels" . | indent 6 }}
         app: {{ .Values.controller.name }}
     spec:
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
       {{- end }}
-      hostNetwork: true  # controller also needs to mount nfs to create dir
+      hostNetwork: true  # controller also needs to mount sealfs to create dir
       dnsPolicy: {{ .Values.controller.dnsPolicy }}
       serviceAccountName: {{ .Values.serviceAccount.controller }}
 {{- with .Values.controller.affinity }}
@@ -97,15 +97,15 @@ spec:
           resources: {{- toYaml .Values.controller.resources.livenessProbe | nindent 12 }}
           securityContext:
             readOnlyRootFilesystem: true
-        - name: nfs
-          image: "{{ .Values.image.nfs.repository }}:{{ .Values.image.nfs.tag }}"
+        - name: sealfs
+          image: "{{ .Values.image.sealfs.repository }}:{{ .Values.image.sealfs.tag }}"
           securityContext:
             privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
             readOnlyRootFilesystem: true
-          imagePullPolicy: {{ .Values.image.nfs.pullPolicy }}
+          imagePullPolicy: {{ .Values.image.sealfs.pullPolicy }}
           args:
             - "--v={{ .Values.controller.logLevel }}"
             - "--nodeid=$(NODE_ID)"
@@ -141,7 +141,7 @@ spec:
               name: socket-dir
             - mountPath: {{ .Values.controller.workingMountDir }}
               name: tmp-dir
-          resources: {{- toYaml .Values.controller.resources.nfs | nindent 12 }}
+          resources: {{- toYaml .Values.controller.resources.sealfs | nindent 12 }}
       volumes:
         - name: pods-mount-dir
           hostPath:

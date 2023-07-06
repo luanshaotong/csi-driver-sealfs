@@ -11,14 +11,14 @@ kind: ServiceAccount
 metadata:
   name: {{ .Values.externalSnapshotter.name }}
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ .Values.externalSnapshotter.name }}-runner
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -54,7 +54,7 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ .Values.externalSnapshotter.name }}-role
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.externalSnapshotter.name }}
@@ -70,7 +70,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ .Values.externalSnapshotter.name }}-leaderelection
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 rules:
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
@@ -82,7 +82,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ .Values.externalSnapshotter.name }}-leaderelection
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.externalSnapshotter.name }}

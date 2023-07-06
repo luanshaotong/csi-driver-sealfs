@@ -5,14 +5,14 @@ kind: ServiceAccount
 metadata:
   name: csi-{{ .Values.rbac.name }}-controller-sa
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: csi-{{ .Values.rbac.name }}-node-sa
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 ---
 {{- end }}
 
@@ -21,7 +21,7 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ .Values.rbac.name }}-external-provisioner-role
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -63,7 +63,7 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ .Values.rbac.name }}-csi-provisioner-binding
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 subjects:
   - kind: ServiceAccount
     name: csi-{{ .Values.rbac.name }}-controller-sa

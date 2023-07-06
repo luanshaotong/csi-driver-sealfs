@@ -1,0 +1,65 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.server.name }}
+  namespace: {{ .Release.Namespace }}
+{{ include "sealfs.labels" . | indent 2 }}
+spec:
+  replicas: {{ .Values.server.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.server.name }}
+  serviceName: {{ .Values.server.name }}
+  template:
+    metadata:
+{{ include "sealfs.labels" . | indent 6 }}
+      app: {{ .Values.server.name }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 8 }}
+      {{- end }}
+{{- with .Values.server.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      nodeSelector:
+        kubernetes.io/os: linux
+        {{- if .Values.server.runOnMaster}}
+        node-role.kubernetes.io/master: ""
+        {{- end}}
+        {{- if .Values.server.runOnControlPlane}}
+        node-role.kubernetes.io/control-plane: ""
+        {{- end}}
+{{- with .Values.server.nodeSelector }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+      priorityClassName: system-cluster-critical
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+{{- with .Values.server.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      containers:
+        - name: csi-provisioner
+          image: "{{ .Values.image.sealfsServer.repository }}:{{ .Values.image.sealfsServer.tag }}"
+          args:
+          - "--manager-address={{ .Values.manager.name }}:{{ .Values.manager.port }}"
+          - "--server-address=$(POD_IP):{{ .Values.server.port }}"
+          - "--database-path=/data/database0"
+          - "--storage-path=/data/storage0"
+          - "--log-level=warn"
+          imagePullPolicy: {{ .Values.image.sealfsServer.pullPolicy }}
+          volumeMounts:
+            - mountPath: /data
+              name: sealfs-data
+          resources: {{- toYaml .Values.server.resources | nindent 12 }}
+          securityContext:
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: sealfs-data
+          hostPath:
+            path: {{ .Values.server.dataPath }}
+            type: DirectoryOrCreate

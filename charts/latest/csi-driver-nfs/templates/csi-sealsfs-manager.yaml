@@ -1,0 +1,61 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.manager.name }}
+  namespace: {{ .Release.Namespace }}
+{{ include "sealfs.labels" . | indent 2 }}
+spec:
+  replicas: {{ .Values.manager.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.manager.name }}
+  template:
+    metadata:
+{{ include "sealfs.labels" . | indent 6 }}
+        app: {{ .Values.manager.name }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 8 }}
+      {{- end }}
+{{- with .Values.manager.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      nodeSelector:
+        kubernetes.io/os: linux
+        {{- if .Values.manager.runOnMaster}}
+        node-role.kubernetes.io/master: ""
+        {{- end}}
+        {{- if .Values.manager.runOnControlPlane}}
+        node-role.kubernetes.io/control-plane: ""
+        {{- end}}
+{{- with .Values.manager.nodeSelector }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+      priorityClassName: system-cluster-critical
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+{{- with .Values.manager.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      containers:
+        - name: csi-provisioner
+          image: "{{ .Values.image.sealfsManager.repository }}:{{ .Values.image.sealfsManager.tag }}"
+          env:
+            - name: SEALFS_CONFIG_PATH
+              value: /sealfs
+          imagePullPolicy: {{ .Values.image.sealfsManager.pullPolicy }}
+          volumeMounts:
+            - mountPath: /sealfs/manager.yaml
+              name: manager-config
+          resources: {{- toYaml .Values.manager.resources | nindent 12 }}
+          securityContext:
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: manager-config
+          configMap:
+            name: {{ .Values.configmap.name }}

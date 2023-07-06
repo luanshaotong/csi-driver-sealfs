@@ -4,7 +4,7 @@ apiVersion: apps/v1
 metadata:
   name: {{ .Values.node.name }}
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
 spec:
   updateStrategy:
     rollingUpdate:
@@ -15,16 +15,16 @@ spec:
       app: {{ .Values.node.name }}
   template:
     metadata:
-{{ include "nfs.labels" . | indent 6 }}
+{{ include "sealfs.labels" . | indent 6 }}
         app: {{ .Values.node.name }}
     spec:
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
       {{- end }}
-      hostNetwork: true # original nfs connection would be broken without hostNetwork setting
+      hostNetwork: true # original sealfs connection would be broken without hostNetwork setting
       dnsPolicy: {{ .Values.controller.dnsPolicy }}
-      serviceAccountName: csi-nfs-node-sa
+      serviceAccountName: csi-sealfs-node-sa
       priorityClassName: system-node-critical
       securityContext:
         seccompProfile:
@@ -73,7 +73,7 @@ spec:
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
           env:
             - name: DRIVER_REG_SOCK_PATH
-              value: {{ .Values.kubeletDir }}/plugins/csi-nfsplugin/csi.sock
+              value: {{ .Values.kubeletDir }}/plugins/csi-sealfsplugin/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -85,14 +85,14 @@ spec:
             - name: registration-dir
               mountPath: /registration
           resources: {{- toYaml .Values.node.resources.nodeDriverRegistrar | nindent 12 }}
-        - name: nfs
+        - name: sealfs-plugin
           securityContext:
             privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
             readOnlyRootFilesystem: true
-          image: "{{ .Values.image.nfs.repository }}:{{ .Values.image.nfs.tag }}"
+          image: "{{ .Values.image.sealfsPlugin.repository }}:{{ .Values.image.sealfsPlugin.tag }}"
           args :
             - "--v={{ .Values.node.logLevel }}"
             - "--nodeid=$(NODE_ID)"
@@ -118,18 +118,39 @@ spec:
             initialDelaySeconds: 30
             timeoutSeconds: 10
             periodSeconds: 30
-          imagePullPolicy: {{ .Values.image.nfs.pullPolicy }}
+          imagePullPolicy: {{ .Values.image.sealfsPlugin.pullPolicy }}
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
+            - name: sealfs-cli-socket
+              mountPath: /sealfs-socket
+          resources: {{- toYaml .Values.node.resources.sealfs | nindent 12 }}
+        - name: sealfs-client
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: true
+          image: "{{ .Values.image.sealfsClient.repository }}:{{ .Values.image.sealfsClient.tag }}"
+          args :
+            - "daemon"
+            - "--manager-address={{ .Values.manager.name }}:{{ .Values.manager.port }}"
+            - "--index-file=/sealfs-socket/sealfs.index"
+            - "--socket-path=/sealfs-socket/sealfs.sock"
+            - "--log-level=warn"
+          imagePullPolicy: {{ .Values.image.sealfsClient.pullPolicy }}
+          volumeMounts:
+            - name: sealfs-cli-socket
+              mountPath: /sealfs-socket
             - name: pods-mount-dir
               mountPath: {{ .Values.kubeletDir }}/pods
               mountPropagation: "Bidirectional"
-          resources: {{- toYaml .Values.node.resources.nfs | nindent 12 }}
+          resources: {{- toYaml .Values.node.resources.sealfs | nindent 12 }}
       volumes:
         - name: socket-dir
           hostPath:
-            path: {{ .Values.kubeletDir }}/plugins/csi-nfsplugin
+            path: {{ .Values.kubeletDir }}/plugins/csi-sealfsplugin
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:
@@ -139,3 +160,8 @@ spec:
             path: {{ .Values.kubeletDir }}/plugins_registry
             type: Directory
           name: registration-dir
+        - name: sealfs-cli-socket
+          hostpath:
+            path: /var/run/sealfs-cli
+            type: DirectoryOrCreate
+

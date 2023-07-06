@@ -1,40 +1,61 @@
 customLabels: {}
 image:
-    nfs:
-        repository: gcr.io/k8s-staging-sig-storage/nfsplugin
-        tag: canary
+    sealfsManager:
+        repository: luanshaotong/sealfs-manager
+        tag: latest
+        pullPolicy: IfNotPresent
+    sealfsServer:
+        repository: luanshaotong/sealfs-server
+        tag: latest
+        pullPolicy: IfNotPresent
+    sealfsClient:
+        repository: luanshaotong/sealfs-client
+        tag: latest
+        pullPolicy: IfNotPresent
+    sealfsPlugin:
+        repository: luanshaotong/sealfsplugin
+        tag: latest
         pullPolicy: IfNotPresent
     csiProvisioner:
-        repository: registry.k8s.io/sig-storage/csi-provisioner
+        repository: dyrnq/csi-provisioner
         tag: v3.5.0
         pullPolicy: IfNotPresent
     csiSnapshotter:
-        repository: registry.k8s.io/sig-storage/csi-snapshotter
+        repository: dyrnq/csi-snapshotter
         tag: v6.2.2
         pullPolicy: IfNotPresent
     livenessProbe:
-        repository: registry.k8s.io/sig-storage/livenessprobe
+        repository: dyrnq/livenessprobe
         tag: v2.10.0
         pullPolicy: IfNotPresent
     nodeDriverRegistrar:
-        repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
+        repository: dyrnq/csi-node-driver-registrar
         tag: v2.8.0
         pullPolicy: IfNotPresent
     externalSnapshotter:
-        repository: registry.k8s.io/sig-storage/snapshot-controller
+        repository: dyrnq/snapshot-controller
         tag: v6.2.2
         pullPolicy: IfNotPresent
 
 serviceAccount:
   create: true # When true, service accounts will be created for you. Set to false if you want to use your own.
-  controller: csi-nfs-controller-sa # Name of Service Account to be created or used
+  controller: csi-sealfs-controller-sa # Name of Service Account to be created or used
 
 rbac:
   create: true
-  name: nfs
+  name: sealfs
+
+configmap:
+  name: sealfs-manager-configmap
+  all_servers:
+  - 192.168.0.101
+  - 192.168.0.102
+  - 192.168.0.103
+  port: 8085
+
 
 driver:
-  name: nfs.csi.k8s.io
+  name: sealfs.csi.k8s.io
   mountPermissions: 0
 
 feature:
@@ -44,7 +65,7 @@ feature:
 kubeletDir: /var/lib/kubelet
 
 controller:
-  name: csi-nfs-controller
+  name: csi-sealfs-controller
   replicas: 1
   strategyType: Recreate
   runOnMaster: false
@@ -86,7 +107,7 @@ controller:
       requests:
         cpu: 10m
         memory: 20Mi
-    nfs:
+    sealfs:
       limits:
         memory: 200Mi
       requests:
@@ -94,7 +115,7 @@ controller:
         memory: 20Mi
 
 node:
-  name: csi-nfs-node
+  name: csi-sealfs-node
   dnsPolicy: ClusterFirstWithHostNet  # available values: Default, ClusterFirstWithHostNet, ClusterFirst
   maxUnavailable: 1
   logLevel: 5
@@ -117,15 +138,56 @@ node:
       requests:
         cpu: 10m
         memory: 20Mi
-    nfs:
+    sealfs:
       limits:
         memory: 300Mi
       requests:
         cpu: 10m
         memory: 20Mi
 
+manager:
+  name: csi-sealfs-manager
+  replicas: 1
+  runOnMaster: false
+  runOnControlPlane: false
+  port: 8081
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/controlplane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+  logLevel: warn
+  virtual_nodes: 100
+  resources:
+    limits:
+      memory: 100Mi
+    requests:
+      cpu: 10m
+      memory: 20Mi
+
+server:
+  name: csi-sealfs-server
+  replicas: 1
+  port: 8085
+  strategyType: Recreate
+  logLevel: warn
+  affinity: {}
+  nodeSelector: {}
+  dataPath: /data/sealfs
+  resources:
+    limits:
+      memory: 100Mi
+    requests:
+      cpu: 10m
+      memory: 20Mi
+
 externalSnapshotter:
-  enabled: true
+  enabled: false
   name: snapshot-controller
   controller:
     replicas: 1

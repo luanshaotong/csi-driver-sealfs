@@ -11,7 +11,7 @@ apiVersion: apps/v1
 metadata:
   name: {{ .Values.externalSnapshotter.name }}
   namespace: {{ .Release.Namespace }}
-{{ include "nfs.labels" . | indent 2 }}
+{{ include "sealfs.labels" . | indent 2 }}
     app: {{ .Values.externalSnapshotter.name }}
 {{- with .Values.externalSnapshotter.labels }}
 {{ . | toYaml | indent 4 }}
