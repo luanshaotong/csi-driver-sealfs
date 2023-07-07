@@ -51,7 +51,6 @@ configmap:
   - 192.168.0.101
   - 192.168.0.102
   - 192.168.0.103
-  port: 8085
 
 
 driver:
@@ -150,7 +149,7 @@ manager:
   replicas: 1
   runOnMaster: false
   runOnControlPlane: false
-  port: 8081
+  port: 28056
   tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
@@ -172,8 +171,20 @@ manager:
 
 server:
   name: csi-sealfs-server
-  replicas: 1
-  port: 8085
+  replicas: 3
+  runOnMaster: false
+  runOnControlPlane: false
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/controlplane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+  port: 28060
   strategyType: Recreate
   logLevel: warn
   affinity: {}

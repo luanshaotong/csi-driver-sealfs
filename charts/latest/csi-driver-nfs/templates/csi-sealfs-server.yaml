@@ -13,7 +13,7 @@ spec:
   template:
     metadata:
 {{ include "sealfs.labels" . | indent 6 }}
-      app: {{ .Values.server.name }}
+        app: {{ .Values.server.name }}
     spec:
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -42,9 +42,15 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
+      hostNetwork: true
       containers:
         - name: csi-provisioner
           image: "{{ .Values.image.sealfsServer.repository }}:{{ .Values.image.sealfsServer.tag }}"
+          env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
           args:
           - "--manager-address={{ .Values.manager.name }}:{{ .Values.manager.port }}"
           - "--server-address=$(POD_IP):{{ .Values.server.port }}"

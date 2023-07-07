@@ -161,7 +161,7 @@ spec:
             type: Directory
           name: registration-dir
         - name: sealfs-cli-socket
-          hostpath:
+          hostPath:
             path: /var/run/sealfs-cli
             type: DirectoryOrCreate
 

@@ -50,7 +50,7 @@ spec:
               value: /sealfs
           imagePullPolicy: {{ .Values.image.sealfsManager.pullPolicy }}
           volumeMounts:
-            - mountPath: /sealfs/manager.yaml
+            - mountPath: /sealfs
               name: manager-config
           resources: {{- toYaml .Values.manager.resources | nindent 12 }}
           securityContext:
@@ -59,3 +59,17 @@ spec:
         - name: manager-config
           configMap:
             name: {{ .Values.configmap.name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.manager.name }}
+  namespace: {{ .Release.Namespace }}
+{{ include "sealfs.labels" . | indent 2 }}
+spec:
+  selector:
+    app: {{ .Values.manager.name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.manager.port }}
+      targetPort: {{ .Values.manager.port }}

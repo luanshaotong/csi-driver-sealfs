@@ -1,19 +1,17 @@
+{{- $serverPort  := .Values.server.port -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Values.configmap.name }}
   namespace: {{ .Release.Namespace }}
 data:
-  address:
-    0.0.0.0:{{ .Values.manager.port }}
-  all_servers_address:
+  manager.yaml: |+
+    address: "0.0.0.0:{{ .Values.manager.port }}"
+    all_servers_address: |
 {{- range $index, $element := .Values.configmap.all_servers }}
-    - {{ $element }}:{{ .Values.configmap.port }}
-  virtual_nodes:
-    {{ .Values.manager.virtual_nodes }}
-  heartbeat:
-    false
-  log_level:
-    {{ .Values.manager.logLevel }}
-  protect_threshold:
-    0.5
+      - {{ $element }}:{{ $serverPort }}
+{{- end }}
+    virtual_nodes:
+      {{ .Values.manager.virtual_nodes }}
+    log_level:
+      {{ .Values.manager.logLevel }}
