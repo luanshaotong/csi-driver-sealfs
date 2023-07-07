@@ -67,9 +67,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
 {{ include "sealfs.labels" . | indent 2 }}
 spec:
+  type: NodePort
   selector:
     app: {{ .Values.manager.name }}
   ports:
     - protocol: TCP
       port: {{ .Values.manager.port }}
       targetPort: {{ .Values.manager.port }}
+      nodePort: {{ .Values.manager.nodePort }}

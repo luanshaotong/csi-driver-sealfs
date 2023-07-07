@@ -149,7 +149,8 @@ manager:
   replicas: 1
   runOnMaster: false
   runOnControlPlane: false
-  port: 28056
+  port: 8081
+  nodePort: 30056
   tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
@@ -174,6 +175,7 @@ server:
   replicas: 3
   runOnMaster: false
   runOnControlPlane: false
+  dnsPolicy: ClusterFirstWithHostNet
   tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"

@@ -43,6 +43,7 @@ spec:
 {{ toYaml . | indent 8 }}
 {{- end }}
       hostNetwork: true
+      dnsPolicy: {{ .Values.server.dnsPolicy }}
       containers:
         - name: csi-provisioner
           image: "{{ .Values.image.sealfsServer.repository }}:{{ .Values.image.sealfsServer.tag }}"
@@ -52,7 +53,7 @@ spec:
               fieldRef:
                 fieldPath: status.podIP
           args:
-          - "--manager-address={{ .Values.manager.name }}:{{ .Values.manager.port }}"
+          - "--manager-address=$(POD_IP):{{ .Values.manager.nodePort }}"
           - "--server-address=$(POD_IP):{{ .Values.server.port }}"
           - "--database-path=/data/database0"
           - "--storage-path=/data/storage0"
