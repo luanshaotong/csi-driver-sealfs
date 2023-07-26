@@ -48,10 +48,6 @@ func (ids *IdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPlugin
 // Currently the spec does not dictate what you should return either.
 // Hence, return an empty response
 func (ids *IdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-	err := ids.Driver.ns.cli.Probe()
-	if err != nil {
-		return nil, status.Error(codes.Unavailable, err.Error())
-	}
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
 

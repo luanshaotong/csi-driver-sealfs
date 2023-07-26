@@ -35,6 +35,7 @@ type Cli interface {
 }
 
 type SealfsCli struct {
+	socketPath string
 }
 
 func (f *SealfsCli) Mount(volumeName string, mountPath string, options []string) error {
@@ -46,13 +47,19 @@ func (f *SealfsCli) Mount(volumeName string, mountPath string, options []string)
 		return status.Error(codes.InvalidArgument, "Target path not provided")
 	}
 
+	klog.V(4).Infof("Make mount point dir: %s", mountPath)
 	// mkdir -p mountPath
 	if err := os.MkdirAll(mountPath, 0750); err != nil {
 		return fmt.Errorf("failed to create mount path %s: %v", mountPath, err)
 	}
 
 	sealfsCmd := "sealfs-client"
-	sealfsArgs := []string{"--log-level", "warn", "mount", mountPath, volumeName}
+	sealfsArgs := []string{"--log-level", "warn", "mount", mountPath, volumeName, "--socket-path", f.socketPath}
+
+	if len(options) > 0 {
+		sealfsArgs = append(sealfsArgs, options...)
+	}
+
 	mountArgsLogStr := ""
 	for _, arg := range sealfsArgs {
 		mountArgsLogStr = mountArgsLogStr + " " + arg
@@ -116,7 +123,7 @@ func (f *SealfsCli) Umount(mountPath string) error {
 func (f *SealfsCli) Create(volumeName string, server string, size int64, onDeletePolicy string) (*sealfsVolume, error) {
 
 	sealfsCmd := "sealfs-client"
-	sealfsArgs := []string{"--log-level", "warn", "create", "-m", server, volumeName, "100000"}
+	sealfsArgs := []string{"--log-level", "warn", "create-volume", "-m", server, volumeName, "100000"}
 	mountArgsLogStr := ""
 	for _, arg := range sealfsArgs {
 		mountArgsLogStr = mountArgsLogStr + " " + arg

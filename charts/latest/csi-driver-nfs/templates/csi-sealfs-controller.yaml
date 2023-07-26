@@ -112,8 +112,8 @@ spec:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--drivername={{ .Values.driver.name }}"
             - "--mount-permissions={{ .Values.driver.mountPermissions }}"
-            - "--working-mount-dir={{ .Values.controller.workingMountDir }}"
             - "--default-ondelete-policy={{ .Values.controller.defaultOnDeletePolicy }}"
+            - "--drivermanager-endpoint={{ .Values.manager.name }}:{{ .Values.manager.port }}"
           env:
             - name: NODE_ID
               valueFrom:

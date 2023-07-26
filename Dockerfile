@@ -19,11 +19,11 @@ ARG binary=./bin/${ARCH}/sealfsplugin
 
 RUN sed -i.bak 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list && \
     apt update && apt upgrade -y && apt-mark unhold libcap2 && \
-    apt install -y libfuse3-3 libibverbs1 && \
+    apt install -y libfuse3-3 libfuse2 libibverbs1 && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY sealfs-client /usr/bin/sealfs-client
-COPY ${binary} /sealfsplugin
+COPY ${binary} /sealfs-plugin
 
-ENTRYPOINT ["/sealfsplugin"]
+ENTRYPOINT ["/sealfs-plugin"]

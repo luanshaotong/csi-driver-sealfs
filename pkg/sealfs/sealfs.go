@@ -31,6 +31,8 @@ type DriverOptions struct {
 	Endpoint              string
 	MountPermissions      uint64
 	DefaultOnDeletePolicy string
+	DriverManagerEndpoint string
+	SealfsSocket          string
 }
 
 type SealfsDriver struct {
@@ -39,7 +41,9 @@ type SealfsDriver struct {
 	version               string
 	endpoint              string
 	mountPermissions      uint64
+	driverManagerEndpoint string
 	defaultOnDeletePolicy string
+	SealfsSocket          string
 
 	//ids *identityServer
 	ns          *NodeServer
@@ -54,8 +58,7 @@ const (
 	// The base directory must be a direct child of the root directory.
 	// The root directory is omitted from the string, for example:
 	//     "base" instead of "/base"
-	paramHost              = "manager-host"
-	paramPort              = "manager-port"
+	paramVolumeDir         = "volumedir"
 	paramOnDelete          = "ondelete"
 	mountPermissionsField  = "mountpermissions"
 	pvcNameKey             = "csi.storage.k8s.io/pvc/name"
@@ -71,11 +74,14 @@ func NewDriver(options *DriverOptions) *SealfsDriver {
 	klog.V(2).Infof("Driver: %v version: %v", options.DriverName, driverVersion)
 
 	n := &SealfsDriver{
-		name:             options.DriverName,
-		version:          driverVersion,
-		nodeID:           options.NodeID,
-		endpoint:         options.Endpoint,
-		mountPermissions: options.MountPermissions,
+		name:                  options.DriverName,
+		version:               driverVersion,
+		nodeID:                options.NodeID,
+		endpoint:              options.Endpoint,
+		mountPermissions:      options.MountPermissions,
+		driverManagerEndpoint: options.DriverManagerEndpoint,
+		defaultOnDeletePolicy: options.DefaultOnDeletePolicy,
+		SealfsSocket:          options.SealfsSocket,
 	}
 
 	n.AddControllerServiceCapabilities([]csi.ControllerServiceCapability_RPC_Type{
@@ -106,14 +112,14 @@ func (n *SealfsDriver) Run(testMode bool) {
 	}
 	klog.V(2).Infof("\nDRIVER INFORMATION:\n-------------------\n%s\n\nStreaming logs below:", versionMeta)
 
-	cli := SealfsCli{}
+	cli := SealfsCli{socketPath: n.SealfsSocket}
 	n.ns = NewNodeServer(n, &cli)
 	s := NewNonBlockingGRPCServer()
 	s.Start(n.endpoint,
 		NewDefaultIdentityServer(n),
 		// NFS plugin has not implemented ControllerServer
 		// using default controllerserver.
-		NewControllerServer(n, &cli),
+		NewControllerServer(n, &cli, n.driverManagerEndpoint),
 		n.ns,
 		testMode)
 	s.Wait()

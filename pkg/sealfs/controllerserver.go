@@ -17,6 +17,8 @@ limitations under the License.
 package sealfs
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -31,8 +33,9 @@ import (
 
 // ControllerServer controller server setting
 type ControllerServer struct {
-	Driver *SealfsDriver
-	cli    Cli
+	Driver          *SealfsDriver
+	cli             Cli
+	ManagerEndpoint string
 }
 
 // sealfsVolume is an internal representation of a volume
@@ -128,8 +131,7 @@ func (cs *ControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	// validate parameters (case-insensitive)
 	for k, v := range parameters {
 		switch strings.ToLower(k) {
-		case paramHost:
-		case paramPort:
+		case paramVolumeDir:
 		case paramOnDelete:
 		case pvcNamespaceKey:
 		case pvcNameKey:
@@ -147,23 +149,29 @@ func (cs *ControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 		}
 	}
 
-	serverName := parameters[paramHost]
-	if serverName == "" {
-		return nil, fmt.Errorf("missing required parameter %s", paramHost)
-	}
+	// serverName := parameters[paramHost]
+	// if serverName == "" {
+	// 	return nil, fmt.Errorf("missing required parameter %s", paramHost)
+	// }
 
-	port := parameters[paramPort]
-	if port == "" {
-		port = "8080"
-	}
+	// port := parameters[paramPort]
+	// if port == "" {
+	// 	port = "8081"
+	// }
 
 	if name == "" {
 		return nil, fmt.Errorf("missing required volume name")
 	}
 
-	volumeName := fmt.Sprintf("%s#%s#%s", serverName, port, name)
+	volumeName := parameters[paramVolumeDir]
+	if volumeName == "" {
+		klog.V(4).Infof("CreateVolume: volumeName is empty, using hash of name")
+		// hash the name to avoid collisions
+		hash := sha256.Sum256([]byte(name))
+		volumeName = fmt.Sprintf("%s-%s", "unnamed", hex.EncodeToString(hash[:]))
+	}
 
-	server := fmt.Sprintf("%s:%s", serverName, port)
+	server := cs.ManagerEndpoint
 
 	onDelete := parameters[paramOnDelete]
 	if onDelete == "" {

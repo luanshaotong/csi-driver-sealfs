@@ -64,8 +64,7 @@ func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	// mountPermissions := ns.Driver.mountPermissions
 	for k, v := range req.GetVolumeContext() {
 		switch strings.ToLower(k) {
-		case paramHost:
-		case paramPort:
+		case paramVolumeDir:
 		case paramOnDelete:
 		case pvcNamespaceKey:
 		case pvcNameKey:
@@ -135,7 +134,13 @@ func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	// }
 	// klog.V(2).Infof("volume(%s) mount %s on %s succeeded", volumeID, source, targetPath)
 
-	err := ns.cli.Mount(req.VolumeId, req.TargetPath, []string{})
+	options := []string{}
+
+	if req.GetReadonly() {
+		options = append(options, "--read-only")
+	}
+
+	err := ns.cli.Mount(req.VolumeId, req.TargetPath, options)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

@@ -22,7 +22,7 @@ spec:
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
       {{- end }}
-      hostNetwork: true # original sealfs connection would be broken without hostNetwork setting
+      hostNetwork: true # for efficiency
       dnsPolicy: {{ .Values.controller.dnsPolicy }}
       serviceAccountName: csi-sealfs-node-sa
       priorityClassName: system-node-critical
@@ -99,6 +99,7 @@ spec:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--drivername={{ .Values.driver.name }}"
             - "--mount-permissions={{ .Values.driver.mountPermissions }}"
+            - "--drivermanager-endpoint={{ .Values.manager.name }}:{{ .Values.manager.port }}"
           env:
             - name: NODE_ID
               valueFrom:
@@ -124,6 +125,9 @@ spec:
               mountPath: /csi
             - name: sealfs-cli-socket
               mountPath: /sealfs-socket
+            - name: pods-mount-dir
+              mountPath: {{ .Values.kubeletDir }}/pods
+              mountPropagation: "Bidirectional"
           resources: {{- toYaml .Values.node.resources.sealfs | nindent 12 }}
         - name: sealfs-client
           securityContext:
@@ -134,11 +138,12 @@ spec:
             readOnlyRootFilesystem: true
           image: "{{ .Values.image.sealfsClient.repository }}:{{ .Values.image.sealfsClient.tag }}"
           args :
+            - "--log-level=warn"
             - "daemon"
             - "--manager-address={{ .Values.manager.name }}:{{ .Values.manager.port }}"
             - "--index-file=/sealfs-socket/sealfs.index"
             - "--socket-path=/sealfs-socket/sealfs.sock"
-            - "--log-level=warn"
+            - "--clean-socket"
           imagePullPolicy: {{ .Values.image.sealfsClient.pullPolicy }}
           volumeMounts:
             - name: sealfs-cli-socket

@@ -7,7 +7,7 @@ metadata:
 data:
   manager.yaml: |+
     address: "0.0.0.0:{{ .Values.manager.port }}"
-    all_servers_address: |
+    all_servers_address:
 {{- range $index, $element := .Values.configmap.all_servers }}
       - {{ $element }}:{{ $serverPort }}
 {{- end }}

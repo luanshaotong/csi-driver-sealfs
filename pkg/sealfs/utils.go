@@ -56,10 +56,11 @@ func NewDefaultIdentityServer(d *SealfsDriver) *IdentityServer {
 	}
 }
 
-func NewControllerServer(d *SealfsDriver, cli Cli) *ControllerServer {
+func NewControllerServer(d *SealfsDriver, cli Cli, endpoint string) *ControllerServer {
 	return &ControllerServer{
-		Driver: d,
-		cli:    cli,
+		Driver:          d,
+		cli:             cli,
+		ManagerEndpoint: endpoint,
 	}
 }
 

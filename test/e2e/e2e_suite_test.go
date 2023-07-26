@@ -101,7 +101,7 @@ var _ = ginkgo.BeforeSuite(func() {
 		Endpoint:   fmt.Sprintf("unix:///tmp/csi-%s.sock", uuid.NewUUID().String()),
 	}
 	nfsDriver = sealfs.NewDriver(&options)
-	controllerServer = sealfs.NewControllerServer(nfsDriver, &sealfs.SealfsCli{})
+	controllerServer = sealfs.NewControllerServer(nfsDriver, &sealfs.SealfsCli{}, "csi-sealfs-manager:8081")
 
 	// install nfs server
 	installNFSServer := testCmd{

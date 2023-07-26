@@ -17,6 +17,8 @@ limitations under the License.
 package sealfs
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"reflect"
 	"testing"
@@ -27,10 +29,11 @@ import (
 	"golang.org/x/net/context"
 )
 
+var name_hash = sha256.Sum256([]byte("volume-name"))
+var testVolumeID = fmt.Sprintf("%s-%s", "unnamed", hex.EncodeToString(name_hash[:]))
+
 const (
-	testServer                  = "test-server"
 	testCSIVolume               = "volume-name"
-	testVolumeID                = "test-server/test-base-dir/volume-name"
 	newTestVolumeID             = "test-server#8080#volume-name"
 	newTestVolumeWithVolumeID   = "test-server#8080#volume-name"
 	testVolumeIDNested          = "test-server/test/base/dir/volume-name"
@@ -46,7 +49,7 @@ func initTestController(t *testing.T) *ControllerServer {
 		MountPermissions: 0777,
 	})
 	driver.ns = NewNodeServer(driver, &cli)
-	cs := NewControllerServer(driver, &cli)
+	cs := NewControllerServer(driver, &cli, "fake_server")
 	return cs
 }
 
@@ -90,15 +93,13 @@ func TestCreateVolume(t *testing.T) {
 					},
 				},
 				Parameters: map[string]string{
-					paramHost:             testServer,
 					mountPermissionsField: "0750",
 				},
 			},
 			resp: &csi.CreateVolumeResponse{
 				Volume: &csi.Volume{
-					VolumeId: newTestVolumeID,
+					VolumeId: testVolumeID,
 					VolumeContext: map[string]string{
-						paramHost:             testServer,
 						mountPermissionsField: "0750",
 					},
 				},
@@ -118,16 +119,12 @@ func TestCreateVolume(t *testing.T) {
 						},
 					},
 				},
-				Parameters: map[string]string{
-					paramHost: testServer,
-				},
+				Parameters: map[string]string{},
 			},
 			resp: &csi.CreateVolumeResponse{
 				Volume: &csi.Volume{
-					VolumeId: newTestVolumeWithVolumeID,
-					VolumeContext: map[string]string{
-						paramHost: testServer,
-					},
+					VolumeId:      newTestVolumeWithVolumeID,
+					VolumeContext: map[string]string{},
 				},
 			},
 		},
@@ -144,9 +141,7 @@ func TestCreateVolume(t *testing.T) {
 						},
 					},
 				},
-				Parameters: map[string]string{
-					paramHost: testServer,
-				},
+				Parameters: map[string]string{},
 			},
 			expectErr: true,
 		},
@@ -185,7 +180,6 @@ func TestCreateVolume(t *testing.T) {
 					},
 				},
 				Parameters: map[string]string{
-					paramHost:             testServer,
 					mountPermissionsField: "07ab",
 				},
 			},

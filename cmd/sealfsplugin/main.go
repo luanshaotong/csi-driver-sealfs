@@ -30,6 +30,8 @@ var (
 	nodeID                = flag.String("nodeid", "", "node id")
 	mountPermissions      = flag.Uint64("mount-permissions", 0, "mounted folder permissions")
 	driverName            = flag.String("drivername", sealfs.DefaultDriverName, "name of the driver")
+	driverManagerEndpoint = flag.String("drivermanager-endpoint", "", "driver manager endpoint")
+	sealfsSocket          = flag.String("sealfs-socket", "/sealfs-socket/sealfs.sock", "sealfs socket")
 	defaultOnDeletePolicy = flag.String("default-ondelete-policy", "", "default policy for deleting subdirectory when deleting a volume")
 )
 
@@ -54,7 +56,9 @@ func handle() {
 		DriverName:            *driverName,
 		Endpoint:              *endpoint,
 		MountPermissions:      *mountPermissions,
+		DriverManagerEndpoint: *driverManagerEndpoint,
 		DefaultOnDeletePolicy: *defaultOnDeletePolicy,
+		SealfsSocket:          *sealfsSocket,
 	}
 	d := sealfs.NewDriver(&driverOptions)
 	d.Run(false)
