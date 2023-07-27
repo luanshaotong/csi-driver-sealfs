@@ -168,7 +168,7 @@ func (cs *ControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 		klog.V(4).Infof("CreateVolume: volumeName is empty, using hash of name")
 		// hash the name to avoid collisions
 		hash := sha256.Sum256([]byte(name))
-		volumeName = fmt.Sprintf("%s-%s", "unnamed", hex.EncodeToString(hash[:]))
+		volumeName = fmt.Sprintf("%s-%s", "unnamed", hex.EncodeToString(hash[:16]))
 	}
 
 	server := cs.ManagerEndpoint

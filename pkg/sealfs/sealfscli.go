@@ -89,7 +89,7 @@ func (f *SealfsCli) Umount(mountPath string) error {
 	}
 
 	sealfsCmd := "sealfs-client"
-	sealfsArgs := []string{"--log-level", "warn", "umount", mountPath}
+	sealfsArgs := []string{"--log-level", "warn", "umount", mountPath, "--socket-path", f.socketPath}
 	mountArgsLogStr := ""
 	for _, arg := range sealfsArgs {
 		mountArgsLogStr = mountArgsLogStr + " " + arg

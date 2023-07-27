@@ -139,8 +139,6 @@ spec:
               mountPropagation: "Bidirectional"
             - mountPath: /csi
               name: socket-dir
-            - mountPath: {{ .Values.controller.workingMountDir }}
-              name: tmp-dir
           resources: {{- toYaml .Values.controller.resources.sealfs | nindent 12 }}
       volumes:
         - name: pods-mount-dir
@@ -148,6 +146,4 @@ spec:
             path: {{ .Values.kubeletDir }}/pods
             type: Directory
         - name: socket-dir
-          emptyDir: {}
-        - name: tmp-dir
           emptyDir: {}

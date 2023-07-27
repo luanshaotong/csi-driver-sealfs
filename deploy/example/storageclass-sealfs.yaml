@@ -4,8 +4,5 @@ kind: StorageClass
 metadata:
   name: sealfs-csi
 provisioner: sealfs.csi.k8s.io
-parameters:
-  manager-host: "127.0.0.1"
-  manager-port: "8081"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
