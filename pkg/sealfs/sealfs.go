@@ -68,6 +68,7 @@ const (
 	pvcNamespaceMetadata   = "${pvc.metadata.namespace}"
 	pvNameMetadata         = "${pv.metadata.name}"
 	csiProvisionerIdentity = "storage.kubernetes.io/csiprovisioneridentity"
+	readOnlyKey            = "readonly"
 )
 
 func NewDriver(options *DriverOptions) *SealfsDriver {

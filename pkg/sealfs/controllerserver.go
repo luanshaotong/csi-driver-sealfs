@@ -137,6 +137,14 @@ func (cs *ControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 		case pvcNameKey:
 		case pvNameKey:
 			// no op
+		case readOnlyKey:
+			if v != "" {
+				var err error
+				_, err = strconv.ParseBool(v)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid readOnly %s", v))
+				}
+			}
 		case mountPermissionsField:
 			if v != "" {
 				var err error

@@ -1,0 +1,10 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: sealfs-csi
+provisioner: sealfs.csi.k8s.io
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+  volumedir: sealfs-test-pv-dir
+  readOnly: "true"

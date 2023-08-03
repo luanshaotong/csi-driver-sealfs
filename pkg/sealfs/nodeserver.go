@@ -59,7 +59,9 @@ func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	// }
 
 	// var server, baseDir, subDir string
-	// subDirReplaceMap := map[string]string{}
+	// subDirReplaceMap := map[string]string{}]
+
+	readOnly := false
 
 	// mountPermissions := ns.Driver.mountPermissions
 	for k, v := range req.GetVolumeContext() {
@@ -70,6 +72,14 @@ func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 		case pvcNameKey:
 		case pvNameKey:
 		case csiProvisionerIdentity:
+		case readOnlyKey:
+			if v != "" {
+				var err error
+				readOnly, err = strconv.ParseBool(v)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid readOnly %s", v))
+				}
+			}
 		case mountPermissionsField:
 			if v != "" {
 				var err error
@@ -135,8 +145,7 @@ func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	// klog.V(2).Infof("volume(%s) mount %s on %s succeeded", volumeID, source, targetPath)
 
 	options := []string{}
-
-	if req.GetReadonly() {
+	if req.GetReadonly() || readOnly {
 		options = append(options, "--read-only")
 	}
 
