@@ -138,7 +138,7 @@ node:
         memory: 20Mi
     sealfs:
       limits:
-        memory: 300Mi
+        memory: 1000Mi
       requests:
         cpu: 10m
         memory: 20Mi
@@ -164,7 +164,7 @@ manager:
   virtual_nodes: 100
   resources:
     limits:
-      memory: 100Mi
+      memory: 1000Mi
     requests:
       cpu: 10m
       memory: 20Mi
@@ -193,7 +193,7 @@ server:
   dataPath: /data/sealfs
   resources:
     limits:
-      memory: 100Mi
+      memory: 10000Mi
     requests:
       cpu: 10m
       memory: 20Mi
