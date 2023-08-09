@@ -139,7 +139,7 @@ spec:
             readOnlyRootFilesystem: true
           image: "{{ .Values.image.sealfsClient.repository }}:{{ .Values.image.sealfsClient.tag }}"
           args :
-            - "--log-level=warn"
+            - "--log-level={{ .Values.sealfs.logLevel }}"
             - "daemon"
             - "--manager-address={{ .Values.manager.name }}:{{ .Values.manager.port }}"
             - "--index-file=/sealfs-socket/sealfs.index"

@@ -52,6 +52,8 @@ configmap:
   - 192.168.0.102
   - 192.168.0.103
 
+sealfs:
+  logLevel: info
 
 driver:
   name: sealfs.csi.k8s.io
@@ -160,7 +162,6 @@ manager:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"
       effect: "NoSchedule"
-  logLevel: warn
   virtual_nodes: 100
   resources:
     limits:
@@ -187,7 +188,6 @@ server:
       effect: "NoSchedule"
   port: 28060
   strategyType: Recreate
-  logLevel: warn
   affinity: {}
   nodeSelector: {}
   dataPath: /data/sealfs

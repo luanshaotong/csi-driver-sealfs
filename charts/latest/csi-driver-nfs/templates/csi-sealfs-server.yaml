@@ -58,7 +58,7 @@ spec:
           - "--server-address=$(POD_IP):{{ .Values.server.port }}"
           - "--database-path=/data/database0"
           - "--storage-path=/data/storage0"
-          - "--log-level=warn"
+          - "--log-level={{ .Values.sealfs.logLevel }}"
           imagePullPolicy: {{ .Values.image.sealfsServer.pullPolicy }}
           volumeMounts:
             - mountPath: /data

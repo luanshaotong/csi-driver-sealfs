@@ -14,4 +14,4 @@ data:
     virtual_nodes:
       {{ .Values.manager.virtual_nodes }}
     log_level:
-      {{ .Values.manager.logLevel }}
+      {{ .Values.sealfs.logLevel }}
